@@ -23,10 +23,10 @@ if ($j.rate_limits) {
     $c5 = if ($h5 -gt 80) { '31' } else { '33' }
     $c7 = if ($d7 -gt 80) { '31' } else { '33' }
 
-    function TimeLeft([string]$iso) {
-        if (-not $iso) { return $null }
+    function TimeLeft([long]$unix) {
+        if (-not $unix) { return $null }
         try {
-            $diff = ([datetime]::Parse($iso).ToUniversalTime()) - [datetime]::UtcNow
+            $diff = [DateTimeOffset]::FromUnixTimeSeconds($unix).UtcDateTime - [datetime]::UtcNow
             if ($diff.TotalSeconds -le 0) { return $null }
             $h = [int]$diff.TotalHours
             $m = $diff.Minutes
