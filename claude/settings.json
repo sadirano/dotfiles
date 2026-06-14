@@ -1,0 +1,6 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "pwsh -NonInteractive -File \"C:\\Users\\sadirano\\.dotfiles\\claude\\statusline.ps1\""
+  }
+}
