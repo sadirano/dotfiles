@@ -20,13 +20,14 @@ $pathSeg = (Color '36' "$($j.cwd)") + (Color '90' ' > ') + (Color '35' "$($j.mod
 if ($env:nix_alias) { $pathSeg = (Color '33' "($($env:nix_alias))") + ' ' + $pathSeg }
 $parts += $pathSeg
 
-# git branch + dirty/clean status — single fast call, silent on non-repos
-function Invoke-GitFast {
-    param([string[]]$GitArgs, [string]$WorkDir, [int]$TimeoutMs = 400)
+# fast external call with a hard timeout — used for git and hoot below;
+# anything that hangs is killed so the status line never stalls
+function Invoke-Fast {
+    param([string]$FileName, [string[]]$CmdArgs, [string]$WorkDir, [int]$TimeoutMs = 400)
     try {
         $psi = New-Object System.Diagnostics.ProcessStartInfo
-        $psi.FileName = 'git'
-        $psi.Arguments = ($GitArgs -join ' ')
+        $psi.FileName = $FileName
+        $psi.Arguments = ($CmdArgs -join ' ')
         $psi.WorkingDirectory = $WorkDir
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
@@ -48,7 +49,7 @@ if (-not $gitCwd) { $gitCwd = $j.workspace.current_dir }
 
 if ($gitCwd -and (Test-Path $gitCwd)) {
     # one call: first line is "## branch...upstream [ahead/behind]", rest are dirty entries
-    $gitOut = Invoke-GitFast -GitArgs @('--no-optional-locks', 'status', '--porcelain=v1', '--branch') -WorkDir $gitCwd -TimeoutMs 400
+    $gitOut = Invoke-Fast -FileName 'git' -CmdArgs @('--no-optional-locks', 'status', '--porcelain=v1', '--branch') -WorkDir $gitCwd -TimeoutMs 400
     if ($gitOut) {
         # wrap in @(...) — a single-line $gitOut would otherwise unwrap to a scalar
         # [char] after -split, and $lines[0].StartsWith would crash
@@ -61,6 +62,14 @@ if ($gitCwd -and (Test-Path $gitCwd)) {
             $parts += (Color '36' $branch) + ' ' + $indicator
         }
     }
+}
+
+# hoot: unseen inbox badge — hidden when the inbox is empty or hoot is absent.
+# Reading the count also gives hoot's piggybacked nag a regular heartbeat.
+$hootOut = Invoke-Fast -FileName 'hoot' -CmdArgs @('count') -WorkDir $env:USERPROFILE -TimeoutMs 500
+if ($hootOut) {
+    $n = $hootOut.Trim() -as [int]
+    if ($n -gt 0) { $parts += Color '33' "$([char]::ConvertFromUtf32(0x1F989))$n" }
 }
 
 # quota (rate limits): 5-hour / 7-day — red when over 80%, else yellow
