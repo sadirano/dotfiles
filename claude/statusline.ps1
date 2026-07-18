@@ -7,6 +7,11 @@
 # See README.md for one-line install instructions.
 
 $raw = [Console]::In.ReadToEnd()
+
+# emit UTF-8 regardless of the console codepage: redirected stdout otherwise
+# uses the legacy codepage, which turns the owl badge (a surrogate pair) into ??
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $e = [char]27
 function Color([string]$code, [string]$text) { "$e[${code}m$text$e[0m" }
 
