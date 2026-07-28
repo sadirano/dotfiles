@@ -1,0 +1,4 @@
+[actions]
+# Pull ~/.claude config into this repo and commit whatever changed.
+# Runs automatically on every Claude Code session start; this is the manual nudge.
+sync = "pwsh -NoProfile -File claude/sync-config.ps1"
