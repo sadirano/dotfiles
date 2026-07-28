@@ -1,6 +1,33 @@
 {
+  "model": "opus",
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -NonInteractive -Command \"$j=[Console]::In.ReadToEnd()|ConvertFrom-Json; $m=if($j.message){$j.message}else{'claude needs attention'}; hoot send $m --tag claude --level warn\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -NonInteractive -File \"$HOME/.dotfiles/claude/sync-config.ps1\"",
+            "async": true,
+            "statusMessage": "Syncing claude config to dotfiles"
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
-    "command": "pwsh -NonInteractive -File \"C:\\Users\\sadirano\\.dotfiles\\claude\\statusline.ps1\""
-  }
+    "command": "pwsh -NonInteractive -File \"$HOME/.dotfiles/claude/statusline.ps1\""
+  },
+  "tui": "fullscreen",
+  "agentPushNotifEnabled": true
 }
