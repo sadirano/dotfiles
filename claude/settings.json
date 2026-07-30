@@ -1,5 +1,6 @@
 {
   "model": "opus",
+  "cleanupPeriodDays": 99999,
   "hooks": {
     "Notification": [
       {
