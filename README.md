@@ -13,7 +13,7 @@ file; the scripts resolve their own location and `$HOME` at runtime.
 ```
 claude/
   CLAUDE.md          global instructions, symlinked to ~/.claude/CLAUDE.md
-  settings.json      mirror of ~/.claude/settings.json
+  settings.json      publishable subset of ~/.claude/settings.json
   statusline.ps1     status line, Windows / PowerShell 7
   statusline.sh      status line, Linux / macOS / bash
   sync-config.ps1    pulls ~/.claude config into this repo and commits it
@@ -94,13 +94,26 @@ Two sync modes, one per file class:
   they are saved and history is never stale. If an editor replaces the symlink
   with a plain file on save, the next run copies the newer content in and
   re-links.
-- **mirrored** - the repo holds a copy refreshed each run. Used for files
-  Claude Code rewrites itself (`settings.json`), where a symlink would be
+- **mirrored** - the repo holds a filtered copy refreshed each run. Used for
+  files Claude Code rewrites itself (`settings.json`), where a symlink would be
   clobbered by the app's own atomic writes.
 
 It commits only paths under `claude/`, so anything else staged in the repo is
 left alone, and it never pushes. Committing is cheap to undo; pushing is a
 separate decision.
+
+### What the mirror publishes
+
+This repo is public, and `settings.json` supports keys that must never be:
+`env` is the documented home for `ANTHROPIC_API_KEY`, `apiKeyHelper` /
+`awsAuthRefresh` / `awsCredentialExport` are credential plumbing, and
+`permissions` enumerates local paths. So the mirror copies an **allowlist** of
+top-level keys (`$publishable` in `sync-config.ps1`) and drops the rest,
+warning about what it dropped. It fails closed: a key nobody has vetted is
+omitted, including keys added by future Claude Code versions.
+
+The trade is deliberate - the mirrored file is a **publishable subset, not a
+backup**. Restoring from it will not bring back anything unlisted.
 
 Creating the symlink needs Developer Mode or an elevated shell on Windows. If
 that fails the script falls back to copying and warns, so the live file is
