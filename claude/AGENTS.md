@@ -67,9 +67,17 @@ experimental, commit it anyway as its own commit and say so.
 
 ## Program output is ASCII
 
-No em dashes in anything a program emits: CLI strings, help text, log lines,
-generated files, commit messages. Windows consoles on legacy codepages render
-them as `ΓÇö`. Use a plain hyphen. Prose docs like this file are exempt.
+Keep program-facing text to ASCII - CLI strings, help text, log lines, generated
+files, commit messages. Any non-ASCII byte can break somewhere in the pipeline,
+and not always where you emitted it: a Windows console on a legacy codepage
+renders an em dash as `ΓÇö`, and Python's stdout defaults to cp1252 and raises
+`UnicodeEncodeError` on an emoji rather than printing it. Use plain hyphens and
+ASCII punctuation.
+
+Non-ASCII is a deliberate choice, never a default. It survives only when the
+program forces UTF-8 output and everything downstream cooperates - gaze's owl
+badge qualifies, and still needed explicit handling to get there. Prose docs
+like this file are exempt.
 
 ## Repo guidance goes in AGENTS.md
 
