@@ -22,6 +22,13 @@ claude/
 
 ## Status line
 
+> **Not what this machine currently runs.** `~/.claude/settings.json` points at
+> [gaze](../repo/owl/thril/gaze), a native binary that renders the same line in
+> ~7ms instead of ~690ms - almost all of the difference being the cost of
+> starting PowerShell or bash at all. These two scripts are kept as the
+> portable reference: they need nothing but a shell, and gaze's output is
+> verified against `statusline.ps1` payload by payload.
+
 Renders a single line:
 
 ```
