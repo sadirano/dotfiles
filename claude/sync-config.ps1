@@ -29,7 +29,11 @@ $repo = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
 $repoDir = Join-Path $repo 'claude'
 $liveDir = Join-Path $HOME '.claude'
 
-$linked = @('CLAUDE.md')
+# AGENTS.md holds the actual guidance; CLAUDE.md is a one-line import of it.
+# The stub exists because CLAUDE.md is the file Claude Code is documented to load
+# at user level - if it also reads AGENTS.md there, the stub is merely redundant,
+# and if it does not, the stub is the only reason any of this loads at all.
+$linked = @('AGENTS.md', 'CLAUDE.md')
 $mirrored = @('settings.json')
 
 # Top-level settings.json keys safe to publish. Add to this deliberately, after
