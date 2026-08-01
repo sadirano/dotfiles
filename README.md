@@ -12,7 +12,8 @@ file; the scripts resolve their own location and `$HOME` at runtime.
 
 ```
 claude/
-  CLAUDE.md          global instructions, symlinked to ~/.claude/CLAUDE.md
+  AGENTS.md          machine-wide agent guidance, symlinked to ~/.claude/AGENTS.md
+  CLAUDE.md          one-line import of AGENTS.md (what Claude Code loads)
   settings.json      publishable subset of ~/.claude/settings.json
   statusline.ps1     status line, Windows / PowerShell 7
   statusline.sh      status line, Linux / macOS / bash
@@ -90,10 +91,10 @@ delays startup, and by hand via `r dotenv :sync`.
 Two sync modes, one per file class:
 
 - **linked** - the repo holds the real file and `~/.claude` gets a symlink to
-  it. Used for files I own (`CLAUDE.md`), so edits land in the repo the instant
-  they are saved and history is never stale. If an editor replaces the symlink
-  with a plain file on save, the next run copies the newer content in and
-  re-links.
+  it. Used for files I own (`AGENTS.md`, `CLAUDE.md`), so edits land in the repo
+  the instant they are saved and history is never stale. If an editor replaces
+  the symlink with a plain file on save, the next run copies the newer content
+  in and re-links.
 - **mirrored** - the repo holds a filtered copy refreshed each run. Used for
   files Claude Code rewrites itself (`settings.json`), where a symlink would be
   clobbered by the app's own atomic writes.
