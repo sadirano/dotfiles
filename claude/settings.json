@@ -27,7 +27,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "pwsh -NonInteractive -File \"$HOME/.dotfiles/claude/statusline.ps1\""
+    "command": "C:/Sadirano/repo/owl/thril/gaze/zig-out/bin/gaze.exe"
   },
   "tui": "fullscreen",
   "agentPushNotifEnabled": true
