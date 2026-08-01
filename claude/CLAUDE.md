@@ -4,6 +4,33 @@ This machine uses **nix** directory aliases for all navigation and project comma
 
 @~/.nix/AGENTS.md
 
+# nix owns where files live
+
+Use nix wherever it can apply. To run, open, or find something, refer to it by
+its nix name rather than a filesystem path: register the project
+(`nix <name> <path>`), declare a `[bin]` export in its `.nix/actions.toml`, end
+the build action with `nix --sync-bin`, then call the bare name. Config files
+name things; nix resolves them.
+
+An absolute path that has ended up in a config file, a script, or a command is a
+sign nix was neglected there — treat it as something to fix, not as a working
+solution.
+
+**Why:** a path in config duplicates knowledge nix already holds, and it rots
+the moment anything moves. It also fails in ways that look like the tool is
+broken rather than the config being wrong. Wiring the gaze status line cost two
+such failures: a JSON `"C:\\path\\to.exe"` reached the shell as escape
+characters and collapsed to `C:pathto.exe: command not found`, and its
+replacement pointed inside `zig-out`, which would have broken on the next move.
+`"command": "gaze"` has neither failure mode, and relocating the project became
+one `nix <name> <new path>`.
+
+**How to apply:** before writing an absolute path, check whether an alias, a
+`[bin]` export, a saved action, or `.nix/env.toml` can carry it instead. When a
+path is genuinely unavoidable, say so and explain why nix cannot cover that
+case. Registering an alias and `nix --sync-bin` both work from an agent shell;
+`nix --trust` and `--force` stay the user's to run.
+
 # nix feedback
 
 While working in any project, if you notice something **nix** (the directory
