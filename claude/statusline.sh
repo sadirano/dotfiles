@@ -130,8 +130,10 @@ format_tokens() {
 cached_total=$(( cache_read + cache_create ))
 (( cached_total > 0 )) && parts+=("$(color 90 "@$(format_tokens "$cached_total")")")
 
-# session cost so far
-cost_fmt=$(awk -v c="$cost" 'BEGIN{ if (c+0 > 0) printf "%.2f", c }')
+# session cost so far — hidden below half a cent, so a barely-started session
+# shows nothing rather than a stuck "$0.00". printf builtin, no awk fork.
+printf -v cost_fmt '%.2f' "$cost" 2>/dev/null || cost_fmt=''
+[[ "$cost_fmt" =~ ^0[.,]00$ ]] && cost_fmt=''
 [[ -n "$cost_fmt" ]] && parts+=("$(color 92 "\$${cost_fmt}")")
 
 # lines added / removed this session
@@ -150,8 +152,9 @@ if (( dur_s > 0 )); then
     parts+=("$(color 90 "$dur")")
 fi
 
-# wall clock
-parts+=("$(color 90 "$(date +%H:%M)")")
+# wall clock — printf %()T builtin (bash 4.2+), no `date` fork
+printf -v now_hm '%(%H:%M)T' -1
+parts+=("$(color 90 "$now_hm")")
 
 out=''
 for p in "${parts[@]}"; do

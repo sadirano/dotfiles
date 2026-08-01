@@ -146,9 +146,10 @@ if ($cachedTotal -gt 0) {
     $parts += Color '90' "@$(Format-TokenCount $cachedTotal)"
 }
 
-# session cost so far
+# session cost so far — hidden below half a cent, so a barely-started session
+# shows nothing rather than a stuck "$0.00"
 $cost = $j.cost.total_cost_usd
-if ($cost -and $cost -gt 0) {
+if ($cost -and [math]::Round([double]$cost, 2) -gt 0) {
     $parts += Color '92' ('$' + ('{0:N2}' -f $cost))
 }
 
