@@ -79,9 +79,20 @@ function Sync-Linked($name) {
 
     if (Test-Path -LiteralPath $live) {
         # A real file sits where the link should be: either first run, or an
-        # editor did a replace-on-save. Its content is the newest, so it wins.
+        # editor did a replace-on-save. Its content is normally the newest, so
+        # it wins - EXCEPT when it is empty and the repo copy is not.
+        #
+        # An empty live file is never a real edit; it is a placeholder some tool
+        # created where the link belonged. Letting it win would copy nothing over
+        # the repo copy and auto-commit the erasure, which is exactly how this
+        # guard came to be written. Repo content wins, and we re-link over it.
         $text = Get-Text $live
-        if ($text -ne (Get-Text $repoFile)) { Set-Text $repoFile $text }
+        $repoText = Get-Text $repoFile
+        if ([string]::IsNullOrWhiteSpace($text) -and -not [string]::IsNullOrWhiteSpace($repoText)) {
+            Write-Warning "$name in ~/.claude was empty; keeping the repo copy and re-linking"
+        } elseif ($text -ne $repoText) {
+            Set-Text $repoFile $text
+        }
         Remove-Item -LiteralPath $live -Force
     } elseif (-not (Test-Path -LiteralPath $repoFile)) {
         return
