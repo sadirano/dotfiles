@@ -27,7 +27,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "C:/Sadirano/repo/owl/thril/gaze/zig-out/bin/gaze.exe"
+    "command": "gaze"
   },
   "tui": "fullscreen",
   "agentPushNotifEnabled": true
