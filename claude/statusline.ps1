@@ -1,6 +1,7 @@
 # Claude Code status line (Windows / PowerShell 7)
 # ------------------------------------------------
-# Renders:  <path> > <model>  <branch> <dirty/clean>  <5h%> / <7d%>  #<context%>  @<cached-tokens>  <RAM>MB  <session>
+# Renders:  (<alias>) <rel-path> > <model>  <branch> <dirty/clean>  <5h%> / <7d%>
+#           #<context%>  @<cached-tokens>  $<cost>  +<added>/-<removed>  <duration>  <clock>
 # Quota turns red when a window is over 80%. Fully portable: no hard-coded paths.
 # Git branch/status uses a single fast `git status --porcelain --branch` call
 # (400ms timeout, killed if it hangs) and is silent in non-repo directories.
@@ -21,9 +22,29 @@ if (-not $j) { "> ?"; exit 0 }
 $parts = @()
 
 # (nix alias) path > model
-$pathSeg = (Color '36' "$($j.cwd)") + (Color '90' ' > ') + (Color '35' "$($j.model.display_name)")
-if ($env:nix_alias) { $pathSeg = (Color '33' "($($env:nix_alias))") + ' ' + $pathSeg }
-$parts += $pathSeg
+# Inside an `o`/`x` session nix exports NIX_ALIAS + NIX_ALIAS_PATH, so the alias
+# root collapses to its name and only the part below it is spelled out. Outside
+# one (or in an unrelated directory) fall back to the full absolute path.
+$cwd = "$($j.cwd)"
+$aliasName = $env:NIX_ALIAS
+$aliasRoot = "$($env:NIX_ALIAS_PATH)".TrimEnd('\', '/')
+$rel = $null
+if ($aliasName -and $aliasRoot -and $cwd) {
+    if ($cwd.TrimEnd('\', '/') -eq $aliasRoot) {
+        $rel = ''
+    } elseif ($cwd.StartsWith($aliasRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+        $rel = $cwd.Substring($aliasRoot.Length + 1)
+    }
+}
+
+if ($null -ne $rel) {
+    $pathSeg = Color '33' "($aliasName)"
+    if ($rel -ne '') { $pathSeg += ' ' + (Color '36' $rel) }
+} else {
+    $pathSeg = Color '36' $cwd
+    if ($aliasName) { $pathSeg = (Color '33' "($aliasName)") + ' ' + $pathSeg }
+}
+$parts += $pathSeg + (Color '90' ' > ') + (Color '35' "$($j.model.display_name)")
 
 # fast external call with a hard timeout — used for git and hoot below;
 # anything that hangs is killed so the status line never stalls
@@ -125,40 +146,30 @@ if ($cachedTotal -gt 0) {
     $parts += Color '90' "@$(Format-TokenCount $cachedTotal)"
 }
 
-# Claude (node) process RAM in MB - cached per session for speed
-$memMB = 0
-$nodePid = $null
-$cacheFile = Join-Path $env:TEMP "claude-sl-$($j.session_id).pid"
-if (Test-Path $cacheFile) {
-    $cached = (Get-Content $cacheFile -ErrorAction SilentlyContinue) -as [string]
-    if ($cached -match '^\d+$') {
-        $p = Get-Process -Id ([int]$cached) -ErrorAction SilentlyContinue
-        if ($p -and $p.ProcessName -match 'node|claude') { $nodePid = [int]$cached }
-    }
+# session cost so far
+$cost = $j.cost.total_cost_usd
+if ($cost -and $cost -gt 0) {
+    $parts += Color '92' ('$' + ('{0:N2}' -f $cost))
 }
-if (-not $nodePid) {
-    $cur = $PID
-    for ($i = 0; $i -lt 6; $i++) {
-        $cim = Get-CimInstance Win32_Process -Filter "ProcessId=$cur" -Property ParentProcessId, Name -ErrorAction SilentlyContinue
-        if (-not $cim) { break }
-        $ppid = $cim.ParentProcessId
-        if (-not $ppid -or $ppid -eq 0) { break }
-        $pproc = Get-Process -Id $ppid -ErrorAction SilentlyContinue
-        if (-not $pproc) { break }
-        if ($pproc.ProcessName -match 'node|claude') { $nodePid = [int]$ppid; break }
-        $cur = $ppid
-    }
-    if ($nodePid) { try { Set-Content -Path $cacheFile -Value $nodePid -ErrorAction SilentlyContinue } catch {} }
-}
-if ($nodePid) {
-    $np = Get-Process -Id $nodePid -ErrorAction SilentlyContinue
-    if ($np) { $memMB = [math]::Round($np.WorkingSet64 / 1MB) }
-}
-if ($memMB -gt 0) { $parts += Color '90' "${memMB}MB" }
 
-# session id (short)
-$sid = "$($j.session_id)"
-if ($sid.Length -gt 8) { $sid = $sid.Substring(0, 8) }
-$parts += Color '90' $sid
+# lines added / removed this session
+$added = [int]$j.cost.total_lines_added
+$removed = [int]$j.cost.total_lines_removed
+if ($added -gt 0 -or $removed -gt 0) {
+    $parts += (Color '32' "+$added") + (Color '90' '/') + (Color '31' "-$removed")
+}
+
+# session wall-clock duration
+$ms = $j.cost.total_duration_ms
+if ($ms -and $ms -gt 0) {
+    $span = [TimeSpan]::FromMilliseconds([double]$ms)
+    $dur = if ($span.TotalHours -ge 1) { "{0}h{1}m" -f [int]$span.TotalHours, $span.Minutes }
+           elseif ($span.TotalMinutes -ge 1) { "{0}m" -f [int]$span.TotalMinutes }
+           else { "{0}s" -f [int]$span.TotalSeconds }
+    $parts += Color '90' $dur
+}
+
+# wall clock
+$parts += Color '90' (Get-Date -Format 'HH:mm')
 
 ($parts -join '  ')

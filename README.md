@@ -25,18 +25,22 @@ claude/
 Renders a single line:
 
 ```
-(alias) <path> > <model>  <branch> <clean|*dirty>  <5h%> / <7d%>  #<context%>  @<cached>  <RAM>MB  <session>
+(alias) <rel-path> > <model>  <branch> <clean|*dirty>  <5h%> / <7d%>
+  #<context%>  @<cached>  $<cost>  +<added>/-<removed>  <duration>  <clock>
 ```
 
+- **path** collapses the nix alias root to its name, so only the part below it
+  is spelled out (`(owl) src/core`). Outside a nix session, or in a directory
+  under no alias, it falls back to the full absolute path
 - **quota** turns red past 80% in either window, with time until reset
 - **git** branch and dirty flag come from one `git status --porcelain --branch`
   call with a 400ms timeout, killed if it hangs, and stay hidden outside a repo
 - **@cached** is `cache_read + cache_creation` input tokens, k/M suffixed
-- **RAM** is the parent Claude process working set, with the PID cached per
-  session so the walk up the process tree runs once
+- **$cost**, **+added/-removed** and **duration** are this session's running
+  totals, each hidden until it is nonzero
 
 Optional segments appear only when their source exists: a `(alias)` prefix when
-`$nix_alias` is set, and an owl badge with an unread count when `hoot`, my
+`$NIX_ALIAS` is set, and an owl badge with an unread count when `hoot`, my
 notification CLI, is installed.
 
 ### Install

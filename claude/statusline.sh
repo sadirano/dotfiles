@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Claude Code status line (Linux / macOS / bash)
 # ----------------------------------------------
-# Renders:  <path> > <model>  <branch> <dirty/clean>  <5h%> / <7d%>  #<context%>  @<cached-tokens>  <RAM>MB  <session>
+# Renders:  (<alias>) <rel-path> > <model>  <branch> <dirty/clean>  <5h%> / <7d%>
+#           #<context%>  @<cached-tokens>  $<cost>  +<added>/-<removed>  <duration>  <clock>
 # Quota turns red when a window is over 80%. Fully portable: no hard-coded paths.
 # Git branch/status uses a single fast `git status --porcelain --branch` call
 # (400ms timeout when `timeout` exists) and is silent in non-repo directories.
@@ -24,19 +25,45 @@ mapfile -t f < <(jq -r '
   .context_window.used_percentage // "null",
   (.context_window.current_usage.cache_read_input_tokens // 0),
   (.context_window.current_usage.cache_creation_input_tokens // 0),
-  .session_id // ""
+  (.cost.total_cost_usd // 0),
+  (.cost.total_lines_added // 0),
+  (.cost.total_lines_removed // 0),
+  (.cost.total_duration_ms // 0)
 ' <<<"$raw" 2>/dev/null | tr -d '\r')   # tr: jq on Windows emits CRLF
-[[ ${#f[@]} -lt 10 ]] && { echo "> ?"; exit 0; }
+[[ ${#f[@]} -lt 13 ]] && { echo "> ?"; exit 0; }
 
 cwd=${f[0]} model=${f[1]} h5=${f[2]} d7=${f[3]} r5_at=${f[4]} r7_at=${f[5]}
-ctx=${f[6]} cache_read=${f[7]} cache_create=${f[8]} sid=${f[9]}
+ctx=${f[6]} cache_read=${f[7]} cache_create=${f[8]}
+cost=${f[9]} added=${f[10]} removed=${f[11]} dur_ms=${f[12]}
 
 parts=()
 
 # (nix alias) path > model
-path_seg="$(color 36 "$cwd")$(color 90 ' > ')$(color 35 "$model")"
-[[ -n "${nix_alias:-}" ]] && path_seg="$(color 33 "(${nix_alias})") $path_seg"
-parts+=("$path_seg")
+# Inside an `o`/`x` session nix exports NIX_ALIAS + NIX_ALIAS_PATH, so the alias
+# root collapses to its name and only the part below it is spelled out. Outside
+# one (or in an unrelated directory) fall back to the full absolute path.
+alias_name=${NIX_ALIAS:-${nix_alias:-}}
+alias_root=${NIX_ALIAS_PATH:-}
+alias_root=${alias_root%/}
+rel=''
+have_rel=0
+if [[ -n "$alias_name" && -n "$alias_root" && -n "$cwd" ]]; then
+    if [[ "${cwd%/}" == "$alias_root" ]]; then
+        have_rel=1
+    elif [[ "$cwd" == "$alias_root"/* ]]; then
+        rel=${cwd#"$alias_root"/}
+        have_rel=1
+    fi
+fi
+
+if (( have_rel )); then
+    path_seg="$(color 33 "(${alias_name})")"
+    [[ -n "$rel" ]] && path_seg+=" $(color 36 "$rel")"
+else
+    path_seg="$(color 36 "$cwd")"
+    [[ -n "$alias_name" ]] && path_seg="$(color 33 "(${alias_name})") $path_seg"
+fi
+parts+=("$path_seg$(color 90 ' > ')$(color 35 "$model")")
 
 # git branch + dirty/clean status — single fast call, silent on non-repos
 git_fast() {
@@ -103,37 +130,28 @@ format_tokens() {
 cached_total=$(( cache_read + cache_create ))
 (( cached_total > 0 )) && parts+=("$(color 90 "@$(format_tokens "$cached_total")")")
 
-# Claude (node) process RAM in MB - cached per session for speed
-mem_mb=0
-node_pid=''
-cache_file="${TMPDIR:-/tmp}/claude-sl-${sid}.pid"
-if [[ -f "$cache_file" ]]; then
-    cached=$(<"$cache_file")
-    if [[ "$cached" =~ ^[0-9]+$ ]]; then
-        name=$(ps -o comm= -p "$cached" 2>/dev/null)
-        [[ "$name" == *node* || "$name" == *claude* ]] && node_pid=$cached
-    fi
-fi
-if [[ -z "$node_pid" ]]; then
-    cur=$$
-    for _ in 1 2 3 4 5 6; do
-        ppid=$(ps -o ppid= -p "$cur" 2>/dev/null | tr -d ' ')
-        [[ -z "$ppid" || "$ppid" -le 1 ]] && break
-        name=$(ps -o comm= -p "$ppid" 2>/dev/null)
-        [[ -z "$name" ]] && break
-        if [[ "$name" == *node* || "$name" == *claude* ]]; then node_pid=$ppid; break; fi
-        cur=$ppid
-    done
-    [[ -n "$node_pid" ]] && printf '%s' "$node_pid" > "$cache_file" 2>/dev/null
-fi
-if [[ -n "$node_pid" ]]; then
-    rss_kb=$(ps -o rss= -p "$node_pid" 2>/dev/null | tr -d ' ')
-    [[ "$rss_kb" =~ ^[0-9]+$ ]] && mem_mb=$(( (rss_kb + 512) / 1024 ))
-fi
-(( mem_mb > 0 )) && parts+=("$(color 90 "${mem_mb}MB")")
+# session cost so far
+cost_fmt=$(awk -v c="$cost" 'BEGIN{ if (c+0 > 0) printf "%.2f", c }')
+[[ -n "$cost_fmt" ]] && parts+=("$(color 92 "\$${cost_fmt}")")
 
-# session id (short)
-parts+=("$(color 90 "${sid:0:8}")")
+# lines added / removed this session
+added=${added%.*}; removed=${removed%.*}
+if (( added > 0 || removed > 0 )); then
+    parts+=("$(color 32 "+${added}")$(color 90 '/')$(color 31 "-${removed}")")
+fi
+
+# session wall-clock duration
+dur_s=$(( ${dur_ms%.*} / 1000 ))
+if (( dur_s > 0 )); then
+    if (( dur_s >= 3600 )); then dur=$(printf '%dh%dm' $(( dur_s / 3600 )) $(( (dur_s % 3600) / 60 )))
+    elif (( dur_s >= 60 )); then dur=$(printf '%dm' $(( dur_s / 60 )))
+    else dur=$(printf '%ds' "$dur_s")
+    fi
+    parts+=("$(color 90 "$dur")")
+fi
+
+# wall clock
+parts+=("$(color 90 "$(date +%H:%M)")")
 
 out=''
 for p in "${parts[@]}"; do
