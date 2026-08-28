@@ -1,6 +1,6 @@
 {
-  "model": "opus",
   "cleanupPeriodDays": 99999,
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -18,8 +18,8 @@
           {
             "type": "command",
             "command": "pwsh -NoProfile -NonInteractive -File \"$HOME/.dotfiles/claude/sync-config.ps1\"",
-            "async": true,
-            "statusMessage": "Syncing claude config to dotfiles"
+            "statusMessage": "Syncing claude config to dotfiles",
+            "async": true
           }
         ]
       }
