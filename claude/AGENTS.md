@@ -85,3 +85,14 @@ In a project repo, the committed file documenting the codebase for agents is
 `AGENTS.md`, worded for any agent rather than one vendor's tool. Never create a
 repo-level `CLAUDE.md`; if one exists, offer to rename it rather than doing it
 unasked.
+
+**Never commit a one-off prompt or task brief.** Instructions written for a
+single agent run - "here is the job", a handover prompt, a checklist for one
+task - do not belong in a repo. Give them to me as chat text, or write them
+outside the repo. Do not `git add` them.
+
+A disposable prompt is not documentation. It has no owner, it rots the moment
+the task finishes or the code moves, and it blurs the line between *how this
+codebase works* and *a job that was handed out once*. The test for whether
+something belongs in `AGENTS.md`: is it still true and useful after the task is
+done? A task brief never is.
