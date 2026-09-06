@@ -69,6 +69,47 @@ fine to ask about; withholding the *commit* is what costs. An unpushed commit is
 nearly free to undo, while a dirty tree destroys the record of when the work was
 done and is expensive to reconstruct later. If work is unfinished or
 experimental, commit it anyway as its own commit and say so.
+
+## Every repo is assumed public
+
+Not "might be one day" - ASSUMED. The default is that anything committed can be
+read by anyone, forever, including from history after it is deleted. Cleaning it
+up later means rewriting history, which is real work and gets worse the longer
+it waits.
+
+Standing rule for EVERY repo on this machine, and it governs what an agent
+commits on my behalf.
+
+**Never track:**
+
+- **Third-party content.** Subtitles, extracted game or book text, scraped
+  pages, downloaded media, dictionary dumps. Not mine to redistribute. Its own
+  repo, or outside version control entirely.
+- **Derived artifacts.** If a build regenerates it, git does not hold it -
+  corpora, generated decks, compiled output, caches. Versioning a derivative of
+  third-party content is the same problem wearing a hat.
+- **Runtime state.** Cooldowns, locks, session files, anything machine-local.
+- **Credentials.** Obvious, and it belongs on the same list.
+
+**Always:**
+
+- **Carry the NOTICE for licensed data.** JMdict and KANJIDIC (EDRDG) are fine
+  to use and require attribution. No NOTICE means either add one or stop.
+- **One responsibility per repo.** Engine, sources, and personal record are
+  three things. A repo holding two of them cannot be published as either.
+- **Justify what goes in**, rather than committing by default and filtering
+  later. `git add -A` inside an automated snapshot is exactly how this rots.
+
+**Check it rather than trusting memory: `x <alias> :audit-repo`.** Lists every
+tracked file by category and flags the four "never" cases. Run it before making
+a repo public, and whenever a new KIND of file starts being tracked.
+
+**Found on 2026-09-06 by the user, not by the agent** - which is why this
+section exists. The study repo tracked 19M of third-party subtitles; the ENGINE
+repo tracked 7.3M of extracted commercial game text plus 60 generated deck files
+across 18 products, with no LICENSE anywhere. The agent had reported the
+subtitles as a durability WIN. **Third-party content in version control is a
+liability first. Say that before saying anything else about it.**
 
 ## Program output is ASCII
 
