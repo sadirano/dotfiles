@@ -37,6 +37,39 @@ hoot send "blocked: need the migration approved" --tag <project> --level warn
 you finish something long-running or when you are blocked on me. One per event -
 do not re-send on silence.
 
+## A fleet of agents is a quota decision, not just a design one
+
+Before spawning SEVERAL agents at once, tell me what it will cost and ask
+whether now is the moment. **Do not start a fleet above roughly 50% of the
+session quota consumed.** The good moment is just after a reset; the other
+acceptable case is me saying I want to burn tokens.
+
+A fleet is the most expensive thing in the toolbox and it is all-or-nothing:
+agents cannot be paused and resumed, only killed and started over. Running out
+mid-fleet throws away everything spent and leaves half-finished work to clean
+up. This is a warning I want BEFORE the launch, not a discovery afterwards -
+on 2026-09-13 five agents went out unasked-about with the quota nearly gone,
+and it cost nothing only because I caught it before any of them committed.
+
+**You can read the number - gaze already logs it.** Every status line payload
+carries `rate_limits.{five_hour,seven_day}.{used_percentage,resets_at}`, and
+gaze appends a deduped sample to `%LOCALAPPDATA%\gaze\quota.log` (override:
+`$GAZE_QUOTA_DIR`). Tab-separated, newest last, `-1` for absent:
+
+    <unix now>  <5h pct>  <5h resets_at>  <7d pct>  <7d resets_at>
+
+So `tail -1` that file before proposing a fleet, and say what it says. The
+five-hour window is usually the binding one - on 2026-09-13 it sat at 68% while
+the seven-day was at 13%. There is also history there, so "we are burning ~10
+points per 5 minutes" is answerable, not a guess.
+
+One agent is not a fleet and needs none of this - the trigger is several at
+once.
+
+Whatever the answer, write the plan down first (partition, rules, the bar for
+what may be committed). Then a deferred launch costs one message instead of a
+re-derivation.
+
 ## Shell reality on Windows
 
 Paths cross between PowerShell and Git Bash constantly, and every failure below
@@ -69,7 +102,8 @@ fine to ask about; withholding the *commit* is what costs. An unpushed commit is
 nearly free to undo, while a dirty tree destroys the record of when the work was
 done and is expensive to reconstruct later. If work is unfinished or
 experimental, commit it anyway as its own commit and say so.
-
+
+
 ## Every repo is assumed public
 
 Not "might be one day" - ASSUMED. The default is that anything committed can be
