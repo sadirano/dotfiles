@@ -70,9 +70,12 @@ def strip_injected(text):
 
 
 def main():
+    # The payload is UTF-8; sys.stdin would decode it with the console codepage.
     try:
-        payload = json.load(sys.stdin)
+        payload = json.loads(sys.stdin.buffer.read().decode("utf-8", errors="replace"))
     except ValueError:
+        return 0
+    if not isinstance(payload, dict):
         return 0
     tool_input = payload.get("tool_input") or {}
     command = tool_input.get("command") or ""
