@@ -3,6 +3,18 @@
   "model": "opus",
   "includeCoAuthoredBy": false,
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$HOME/.dotfiles/claude/hooks/guard_broad_kill.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "hooks": [
