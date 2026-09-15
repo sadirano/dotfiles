@@ -70,6 +70,29 @@ Whatever the answer, write the plan down first (partition, rules, the bar for
 what may be committed). Then a deferred launch costs one message instead of a
 re-derivation.
 
+## You can schedule work for later in the session
+
+When something should happen later - after a quota reset, once a build or a
+meeting is over, at a set time - do not tell me it cannot be scheduled. Claude
+Code has had cron tools since v2.1.71 (2026-03-06): **`CronCreate`**,
+**`CronList`**, **`CronDelete`**. They are *deferred*, so they are easy to miss:
+load them with `ToolSearch` (`select:CronCreate,CronList,CronDelete`) before
+the first call.
+
+- **The prompt fires into this conversation** at the cron time (5-field, local
+  time) as if I had sent it. One-shot (`recurring: false`) deletes itself;
+  recurring jobs expire after 7 days.
+- **Session-only.** Nothing survives closing Claude Code - `durable` has no
+  effect here. Say so when you schedule, and give me the job id.
+- **Fires only while idle** - a busy turn delays it. Avoid minute :00 and :30.
+- **Gate the prompt on a condition, and put the plan in a file.** On 2026-09-15
+  a 16:07 job first read `quota.log` and did nothing but hoot me if the
+  five-hour window had not reset; the work itself lived in a plan file the
+  prompt pointed at, so the job stayed small and editable.
+- **Not this tool:** anything that must run with Claude Code closed goes to
+  `/schedule` (cloud routines) or Windows Task Scheduler. Polling on an
+  interval inside the session is `/loop`.
+
 ## Shell reality on Windows
 
 Paths cross between PowerShell and Git Bash constantly, and every failure below
