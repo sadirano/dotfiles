@@ -93,6 +93,27 @@ the first call.
   `/schedule` (cloud routines) or Windows Task Scheduler. Polling on an
   interval inside the session is `/loop`.
 
+**Overnight jobs.** The point is that I do not stay up for a reset, so a job
+that silently does not run costs me the quota it was meant to use. When you
+schedule something to run while I am away, set it up so it cannot stall:
+
+- **Tell me the machine must stay awake and Claude Code open.** Sleep pauses
+  the session until morning: PowerToys Awake (installed) set to keep awake
+  covers it; a monitor turning off is fine. A Windows Update restart kills
+  the job - mention it.
+- **Nothing may wait on a permission prompt.** A prompt at 3 a.m. blocks until
+  I wake up. Schedule from a session that will not ask for what the job does
+  (auto mode, or allowed permissions that already cover it), and say which
+  commands the job will run.
+- **Give it a stop rule.** Nobody is there to stop it: the prompt says when to
+  stop starting new work (e.g. "no new agents above 85% of the 5h window") so
+  it cannot burn the fresh window dry before I get to use it.
+- **Chain the resets from inside the job.** It ends by reading the next
+  `resets_at` from `quota.log` and scheduling the follow-up for a few minutes
+  after it, rather than me queuing every step by hand.
+- **Leave me one summary.** A single `hoot send ... --level warn` at the end -
+  what finished, what did not, where it stopped - not a toast per step.
+
 ## Shell reality on Windows
 
 Paths cross between PowerShell and Git Bash constantly, and every failure below
