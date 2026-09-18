@@ -19,6 +19,23 @@ ways that look like the tool is broken rather than the config.
 Registering an alias and `nix --sync-bin` work from an agent shell.
 `nix --trust` and `--force` are mine to run.
 
+### Where a new action goes
+
+Before adding an action, decide whether it belongs to the project or to me:
+
+- **Committed `<project>/.nix/actions.toml`** - only what someone cloning the
+  repo needs: build, test, deploy, serve, the project's real workflows. Every
+  line there is public (see "Every repo is assumed public").
+- **Private `~/.nix/actions/<alias>.toml`** - everything else: experiments,
+  demos, one-off migrations and dry runs, debugging helpers, prototypes,
+  anything branch-only, anything describing my personal habits or machine.
+  Same `[actions]` shape, shows up in `x <alias> :` like any other, never
+  enters a repo, and needs no `nix --trust`.
+
+When unsure, it is private. Promoting an action to the committed file later
+is a one-line move; pulling scrap out of a public repo's history is not. If
+an action is throwaway, say which file you put it in.
+
 If nix lacked something you needed, append a dated entry to `~/.nix/feedback.md`
 - what happened, what nix can't do today, why it would help. Check for an
 existing entry on the same idea first. Capture only; never change nix unasked.
