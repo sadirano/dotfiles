@@ -40,6 +40,23 @@ If nix lacked something you needed, append a dated entry to `~/.nix/feedback.md`
 - what happened, what nix can't do today, why it would help. Check for an
 existing entry on the same idea first. Capture only; never change nix unasked.
 
+### Opening a new Claude session for me
+
+When I ask you to open or start a Claude session (in any words, in any
+project), launch it in a new window through the `:claude` action, never a bare
+`claude`:
+
+    Start-Process pwsh -ArgumentList '-NoExit','-Command','x <alias> :claude'
+
+Use the alias I name, or the current project's (`nix --which`) if I name none.
+Extra arguments go after `--` (`x jap :claude -- --continue`). A session
+started from inside yours inherits your CLAUDE_* environment, and
+CLAUDE_CODE_CHILD_SESSION among it switches transcript saving off in the new
+one. `:claude` (in `~/.nix/actions/_default.toml`, running
+`~/.nix/scripts/claude_fresh.ps1`) strips those first, keeping anything I set
+at User or Machine level. Your shell has no console, so the new window is what
+makes the session usable.
+
 ## Tell me things through hoot
 
 `hoot` is on PATH and pops a Windows toast I see even when tabbed away from you.
