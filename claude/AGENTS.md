@@ -123,6 +123,160 @@ Whatever the answer, write the plan down first (partition, rules, the bar for
 what may be committed). Then a deferred launch costs one message instead of a
 re-derivation.
 
+## Handing work to another agent
+
+**Everything arrives at me first, and delegation only ever goes downward.**
+
+    task -> Claude analyses it
+              |
+              +-- complex, and specifiable      -> brief -> Codex
+              +-- repetitive, and checkable     -> brief -> Agy
+              +-- my quota is low               -> delegate what otherwise stays
+              +-- otherwise                     -> I do it
+
+The question is never "who is best" - it is which failure the work can survive.
+
+| the work is | goes to | because |
+|---|---|---|
+| exploration, specification, judgment, anything where being subtly wrong is invisible | me | the spec does not exist yet, and writing it is the job |
+| well-defined, bounded, genuinely hard - the reasoning is the work, the searching is not | Codex | it is strong and it is expensive, so the brief must remove the searching |
+| repetitive, and mechanically checkable afterwards | Agy | volume is cheap there; the check is what makes it safe |
+
+### The flow is one-way
+
+Codex and Agy do not delegate back to me, and I never arrange for them to. When
+one of them cannot finish - the task turned out wider than the brief, something
+is ambiguous, its quota ran out - it **stops, writes what it has and what is
+blocking into `nix shared@<alias>`, and tells the user**. It does not escalate,
+and it does not summon me.
+
+Picking the work back up is the user's call. They ask me to take over, and only
+then do I read what was left and continue. So a brief is written to be readable
+by whoever picks it up next, including me, hours later.
+
+Routing is therefore something I propose and the user approves. I choose the
+target and write the brief; handing it over is theirs to say yes to.
+
+### Codex: I spec, it implements
+
+**On trial until renewal.** Every task delegated to Codex gets a row in
+`~/.claude/codex-trial.md` - cost in five-hour points, whether it passed its own
+acceptance check first time, and what needed fixing. The criteria are fixed in
+that file and were written before any data existed. Read the meter before and
+after each handover; a task measured after the fact is not a data point.
+
+Codex is capable and expensive, and those are separate facts. Measured on
+2026-09-20: it produced a clean 482-line Zig port with an end-to-end test
+against a fake server, and it did that while burning a five-hour window from 3%
+to 98% in **31 minutes** (184 points/hour, against a window that refills at 20).
+Nothing was wrong with the output. What cost the quota was **65 model turns in
+half an hour across four projects**.
+
+**Turn count is the multiplier, not context size.** Every turn re-sends the whole
+accumulated context, so cost is roughly turns x average context. That session
+sent 6,969,345 input tokens to deliver 282,369 tokens of genuinely new
+information and 38,235 tokens of output - 182 input tokens per output token.
+A 96% cache hit rate did not save it: cached input is cheaper per token, not
+free, and it still counts against the window.
+
+So the split is: **I do the thinking and the specification; Codex does the
+implementation.** The value of a brief is measured in turns it removes. Every
+fact I write down is a turn Codex does not spend discovering it.
+
+If a task is mostly exploration ("find out why X", "look through the repo and
+see"), the spec does not exist yet and it is mine.
+
+### Agy: volume, behind a check
+
+Agy handles a lot of work and is sloppier than Claude or Codex - the user's
+judgment from using it, and it is the operational fact that matters. It does not
+make Agy less useful, it changes what may be sent there.
+
+**The discriminator is verifiability, not difficulty.** If a mechanical check can
+prove the work is right - a test suite passing, a diff being exactly what was
+asked for, a grep finding no stragglers, output matching a reference - then the
+check absorbs the sloppiness and the volume is free. If correctness can only be
+established by reading it carefully, the reading costs more than the work saved.
+
+Good: repetitive edits across many files, mechanical migrations, bulk renames,
+boilerplate, format conversions, generating many similar cases, any sweep whose
+items are independently checkable.
+
+Not Agy's: protocol and parsing code, invariants, anything security-adjacent,
+anything landing in a committed repo without review, and one-shot irreversible
+actions. Being subtly wrong there is expensive and invisible, which is the exact
+combination the check cannot save.
+
+**Write the check before writing the brief**, and put it in the brief. Then run
+it myself afterwards - a self-report that the work is done is not the check.
+If no check can be written, that is the signal the task is not Agy's.
+
+Agy is on the hoot bus as `antigravity`, so a handover can be an actual message
+as well as a file. Codex is not on the bus, so its handovers are file-only.
+
+### The brief
+
+It goes in `nix shared@<alias>` (see above), one file, and it carries:
+
+1. **One repo, one outcome.** If it spans two projects, it is two briefs. The
+   2026-09-20 session swept gaze, han, nix and jpmine in one go, and every file
+   it opened stayed in context and was re-sent for the remaining forty turns.
+2. **The files, by path and line.** Everything it needs to read, named. Never
+   "find where X lives".
+3. **The contract** - invariants it must not break, in the project's own words,
+   quoted rather than referenced.
+4. **The acceptance command**, exactly, with the output that means success.
+5. **What not to touch**, which is what actually bounds the search.
+6. **A stop rule** - if something is ambiguous, write the question into the
+   shared folder and stop, rather than exploring to resolve it.
+
+### Rules to put IN the brief, because they cost real quota
+
+- **Never poll a running command with a model turn.** Eight `wait` calls three
+  seconds apart cost ~280,000 input tokens watching one command finish. Run it
+  synchronously and read the output once.
+- **Do not re-read what the brief already quotes.**
+- **One brief, one fresh session.** Context only grows; a new session resets the
+  multiplier. Several small briefs beat one large one.
+- **If the task grows past the brief, stop** rather than widening: write what is
+  done and what is blocking into the shared folder and tell the user. Do not
+  escalate to another agent - the user decides who continues.
+
+### Quota decides timing, not just target
+
+gaze puts every tool's level on one line - mine from the payload, Codex's read
+from its own session transcripts, Antigravity's from its log - so the numbers
+are always in front of me. Use them.
+
+**Before handing off:** check the target has room. Handing focused work to a
+tool at 98% just means it dies midway, which is exactly how the 2026-09-20
+attempt ended. `x gaze :codex-quota` refreshes Codex authoritatively.
+
+Agy reports several buckets, not one: `3p-5h`, `3p-weekly`, `gemini-5h`,
+`gemini-weekly`. Which one binds depends on the model set in
+`~/.gemini/antigravity-cli/settings.json` - a Claude model spends `3p`, a Gemini
+model spends `gemini`, and they empty independently. So "Agy has room" is not a
+single number: check the bucket its current model actually draws from, and
+switching the model is a real way to get headroom back.
+
+**When I am the one running out:** say so and name who should take over, rather
+than pressing on until I stop mid-task. This is the one case where low quota
+moves work that would otherwise have stayed with me - and it is still a proposal
+to the user, not a handover I make on my own. The trigger is either of
+
+- **my five-hour window past ~80%**, or
+- **the work left plausibly costing more than what remains** - at the measured
+  ~47 points/hour, 20 points left is about 25 minutes.
+
+Then, in one short line: where the work stands, what remains, which tool has the
+headroom for it, and the brief already written to `nix shared@<alias>` so the
+handover costs nothing to pick up. Do not ask permission to *check* the number -
+it is already on screen. Do ask before actually handing over.
+
+**Running out mid-task is the expensive failure**, not the handover. An
+unfinished task with no brief has to be re-derived by whoever picks it up; a
+brief written while I still had room is the cheapest artifact in the workflow.
+
 ## You can schedule work for later in the session
 
 When something should happen later - after a quota reset, once a build or a
