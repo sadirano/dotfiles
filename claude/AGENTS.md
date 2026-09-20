@@ -19,6 +19,20 @@ ways that look like the tool is broken rather than the config.
 Registering an alias and `nix --sync-bin` work from an agent shell.
 `nix --trust` and `--force` are mine to run.
 
+### "The shared" is `nix shared@<alias>`
+
+When I say another agent (Agy, or any other) left something in **the shared**,
+I mean that project's shared drop, and the only way to find it is to resolve
+the sub-alias:
+
+    nix shared@<alias>        # e.g. nix shared@gaze -> ...\gaze\.nix\shared
+
+Use the alias of the project you are working in (`nix --which` if unsure).
+Do NOT go looking for a directory called "shared" on disk - the machine has
+several unrelated ones (`//leroy/shared`, `D:/Shared/sadirano`, the han
+shelves) and searching for it burns a turn and finds the wrong one.
+It is also where YOU leave something for another agent to pick up.
+
 ### Where a new action goes
 
 Before adding an action, decide whether it belongs to the project or to me:
@@ -87,12 +101,17 @@ and it cost nothing only because I caught it before any of them committed.
 
 **You can read the number - gaze already logs it.** Every status line payload
 carries `rate_limits.{five_hour,seven_day}.{used_percentage,resets_at}`, and
-gaze appends a deduped sample to `%LOCALAPPDATA%\gaze\quota.log` (override:
-`$GAZE_QUOTA_DIR`). Tab-separated, newest last, `-1` for absent:
+gaze appends a deduped sample to `%LOCALAPPDATA%\gaze\quota-claude.log`
+(override: `$GAZE_QUOTA_DIR`). Tab-separated, newest last, a unix timestamp then
+one `<window>=<used pct>@<reset unix>` field per allowance window:
 
-    <unix now>  <5h pct>  <5h resets_at>  <7d pct>  <7d resets_at>
+    1789924544      5h=4@1789942200 7d=47@1790434800
 
-So `tail -1` that file before proposing a fleet, and say what it says. The
+So `tail -1` that file before proposing a fleet, and say what it says. Agy logs
+to `quota-agy.log` beside it with its own bucket names, so `ls quota-*.log` says
+which tools have reported and each file reads on its own. (Samples from before
+2026-09-20 are in `quota-v1.log`, in the old positional columns
+`<ts> <5h pct> <5h reset> <7d pct> <7d reset>`.) The
 five-hour window is usually the binding one - on 2026-09-13 it sat at 68% while
 the seven-day was at 13%. There is also history there, so "we are burning ~10
 points per 5 minutes" is answerable, not a guess.
@@ -120,7 +139,7 @@ the first call.
   effect here. Say so when you schedule, and give me the job id.
 - **Fires only while idle** - a busy turn delays it. Avoid minute :00 and :30.
 - **Gate the prompt on a condition, and put the plan in a file.** On 2026-09-15
-  a 16:07 job first read `quota.log` and did nothing but hoot me if the
+  a 16:07 job first read the quota log and did nothing but hoot me if the
   five-hour window had not reset; the work itself lived in a plan file the
   prompt pointed at, so the job stayed small and editable.
 - **Not this tool:** anything that must run with Claude Code closed goes to
@@ -142,9 +161,10 @@ schedule something to run while I am away, set it up so it cannot stall:
 - **Give it a stop rule.** Nobody is there to stop it: the prompt says when to
   stop starting new work (e.g. "no new agents above 85% of the 5h window") so
   it cannot burn the fresh window dry before I get to use it.
-- **Chain the resets from inside the job.** It ends by reading the next
-  `resets_at` from `quota.log` and scheduling the follow-up for a few minutes
-  after it, rather than me queuing every step by hand.
+- **Chain the resets from inside the job.** It ends by reading the next reset -
+  the `@<unix>` on the `5h` field of `tail -1 quota-claude.log` - and scheduling
+  the follow-up for a few minutes after it, rather than me queuing every step
+  by hand.
 - **Leave me one summary.** A single `hoot send ... --level warn` at the end -
   what finished, what did not, where it stopped - not a toast per step.
 
