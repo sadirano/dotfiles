@@ -17,7 +17,7 @@ config means nix was skipped there - it rots on the next move, and it fails in
 ways that look like the tool is broken rather than the config.
 
 Registering an alias and `nix --sync-bin` work from an agent shell.
-`nix --trust` and `--force` are mine to run.
+`nix --trust` is mine to run.
 
 ### "The shared" is `nix shared@<alias>`
 
