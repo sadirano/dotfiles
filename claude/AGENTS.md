@@ -99,3 +99,9 @@ report it as a liability first.
   `CLAUDE.md`; offer to rename an existing one.
 - Never commit a one-off prompt or task brief. Those go in chat or in the
   shared drop.
+
+# Compact instructions
+
+When compacting, drop tool output, file dumps and search results. Keep
+decisions and their reasons, open questions, who owns each pending step,
+commits made, and the exact files, aliases and commands still in play.
