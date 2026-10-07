@@ -1,0 +1,23 @@
+[actions]
+# Small Windows conveniences, run as `x dotenv :<name>` once this repo is a nix
+# alias. Optional: setup.ps1 has nix show them to you before you trust them.
+
+# Open the hosts file elevated, in $EDITOR or notepad. UAC is the only prompt.
+hosts = '(if not defined EDITOR set EDITOR=notepad) & powershell -NoProfile -Command Start-Process $env:EDITOR $env:SystemRoot\System32\drivers\etc\hosts -Verb RunAs'
+
+# Open the Environment Variables editor elevated, so system variables are editable too.
+env = "powershell -NoProfile -Command Start-Process rundll32 'sysdm.cpl,EditEnvironmentVariables' -Verb RunAs"
+
+# Hibernate now.
+h = "shutdown /h"
+
+# Kill Explorer, wait for a key, start it again. Unsticks the taskbar and tray.
+# Run it from a terminal you will come back to: Explorer stays down until you press a key.
+restart = "taskkill /f /im explorer.exe >nul & echo Press a key to restore Explorer & pause >nul & start explorer.exe"
+
+[bin]
+# The same actions as plain commands on PATH, after `nix --sync-bin`.
+hosts = ":hosts"
+env = ":env"
+h = ":h"
+restart = ":restart"

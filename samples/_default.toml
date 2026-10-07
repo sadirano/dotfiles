@@ -1,0 +1,27 @@
+# Copy into ~/.nix/actions/_default.toml, then run `nix --sync-bin`.
+# Machine-wide actions: `x <any-alias> :<name>`. A [bin] entry also puts the
+# action on PATH as a plain command. Values are literal (no TOML escapes), so
+# use single quotes and forward slashes.
+
+[actions]
+# sudo - run any command elevated: `su notepad C:/Windows/System32/drivers/etc/hosts`.
+# Opens in its own console; bare `su` does nothing, use `suh` for a shell.
+sudo = "sudo {args}"
+suhere = "sudo cmd"
+
+# ps1 - run a PowerShell script with the flags you always want.
+# Scripts in a project's .nix/scripts/ already run by bare name; this is for
+# scripts kept elsewhere: `ps1 tools/build.ps1 --release`.
+ps1 = 'pwsh -NoProfile -NoLogo -ExecutionPolicy Bypass -File {args}'
+
+# cc - copy the current directory to the clipboard.
+cc = "cd | clip"
+
+# pause - last link of a chain run from a shortcut: `x acme :build :pause`.
+pause = "pause"
+
+[bin]
+su = ":sudo"
+suh = ":suhere"
+ps1 = ":ps1"
+cc = ":cc"

@@ -1,0 +1,31 @@
+# Copy into ~/.nix/config.toml, then run `nix --sync` and restart the shell.
+
+# Every picker (f, g, s/y with a pattern, segment menus) uses nix's built-in
+# engine instead of spawning fzf.
+[picker]
+engine = "native"
+
+# Every distinct command line nix ran, with a count: `nix --history`.
+# A line containing an ignore word is never recorded. This is a convenience,
+# not a secret filter: never pass a credential on a command line you record.
+[history]
+enabled = true
+ignore = ["Auth", "token", "password", "secret"]
+
+# Recording action output hides an interactive action's prompts, so it stays
+# off; `--log` records one run on demand.
+[log]
+actions = false
+
+# Elevated actions named here skip nix's confirmation; UAC still asks. Only
+# list fixed command lines you wrote yourself - never `sudo` itself, which
+# would waive the question for whatever you hand it.
+#[confirm]
+#trusted = ["hosts", "env"]
+
+# Finish/copy notifications, through any notifier CLI you have. An example
+# with a `hoot send` style command; swap in your own:
+#[notify]
+#on_finish = 'hoot send "{message}" --tag {alias} --level {level}'
+#on_paste = 'hoot send "{message}" --tag {alias}'
+#on_yank = 'hoot send "{message}" --tag {alias}'
